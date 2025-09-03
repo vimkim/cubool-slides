@@ -5,18 +5,34 @@ theme: my-talk
 highlightTheme: monokai
 ---
 
+![height:50px right](cubrid-logo-big-transparent.png)
 ## 큐브리드 대용량 컬럼 저장 구조 개선
 
-큐브리드 **Out-of-Line Column Storage (TOAST)** 도입 논의
- 
+>큐브리드 **Out-of-Line Column Storage (TOAST)** 도입 논의
+
+개발2팀 김대현
+
 ---
 
-## 📌 미팅 개요
+## 🎯 미팅 목적
+
+- 현재 CUBRID 저장 구조의 **대용량 컬럼 처리 한계** 공유  
+- 주요 DBMS(PostgreSQL, MySQL, Oracle) 사례 비교 및 제약사항 이해  
+- 성능 실험 결과 기반으로 TOAST/Off-Page 장단점 검토  
+- CUBRID에 필요한 **개선 방향성 및 요구사항 수집**  
+
+---
+
+## 📌 발표 순서
 
 - 용어 정의
-- 큐브리드 저장 구조의 문제점
+- 큐브리드 대용량 컬럼 저장의 문제점
 - 타 DBMS 사례 조사 결과 공유
-- 개선 방안 논의
+    - **PostgreSQL TOAST**
+    - **MySQL InnoDB off-page**
+    - **Oracle**
+- pg toast 성능 실험 결과 공유
+- 요구사항 수집
 
 ---
 

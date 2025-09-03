@@ -138,3 +138,26 @@ section.tinytext>blockquote {
 table {
     font-size: 0.75em;
 }
+
+section::before {
+  content: "";
+  position: absolute;
+  top: 1.3em;
+  right: 1.3em;
+  width: 90px; /* adjust size */
+  height: auto;
+  background: url("https://ftp.cubrid.org/CUBRID_Docs/Brochure/BI_Images/cubrid-logo-big-transparent.png") no-repeat center;
+  background-size: contain;
+  pointer-events: none; /* so it doesn’t block text clicks */
+}
+
+/* url("https://ftp.cubrid.org/CUBRID_Docs/Brochure/BI_Images/cubrid-logo-big-transparent.png") */
+
+
+section {
+  background-image: url("https://ftp.cubrid.org/CUBRID_Docs/Brochure/BI_Images/cubrid-logo-big-transparent.png"),
+                    linear-gradient(to bottom right, #f7f7f7 0%, #d3d3d3 100%);
+  background-repeat: no-repeat, no-repeat;
+  background-position: top 1em right 1em, center;
+  background-size: 80px, cover;
+}
