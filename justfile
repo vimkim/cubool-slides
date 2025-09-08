@@ -1,5 +1,5 @@
 marp:
-    marp --theme ./vimkim.css cubool.md
+    marp --theme ./vimkim.css cubool.md -o docs/index.html
 
 marp-pdf:
     marp --theme ./vimkim.css cubool.md --pdf
