@@ -18,22 +18,79 @@ highlightTheme: monokai
 
 ## 🎯 목차
 
-- 현재 CUBRID 저장 구조의 **대용량 레코드 처리 한계** 공유
-- 주요 DBMS(PostgreSQL, MySQL, Oracle) 사례 비교 및 제약사항 이해
-- 성능 실험 결과 기반으로 장단점 검토
-- CUBRID에 필요한 **개선 방향성 및 요구사항 수집**
+- 배경:
+  현재 CUBRID **대용량 레코드 처리** 의 한계
+- 요구사항:
+  불필요한 Column에 대한 I/O 최소화
+- 주요 DBMS(PostgreSQL, MySQL) 사례 비교
+  * 용어 정의
+  * 사례
+    - **PostgreSQL TOAST** (The Oversized-Attribute Storage Technique)
+    - **MySQL InnoDB off-page**
+- 큐브리드의 개선 방향성 제안
 
 ---
 
-## 📌 발표 순서
+## 배경: 현재 CUBRID **대용량 레코드 처리** 의 한계
 
-* 용어 정의
-* 큐브리드 대용량 레코드 저장의 문제점
-* 타 DBMS 사례 조사 결과 공유
-  - **PostgreSQL TOAST** (The Oversized-Attribute Storage Technique)
-  - **MySQL InnoDB off-page**
-  - **Oracle Row Chaining**
-* **큐브리드의 개선 방향성 제안**
+---
+
+## ⚠️ 현재 문제점
+
+```sql
+create table tbl (id int, txt varchar); -- 매우 큰 varchar
+
+-- insert 1000000 rows...
+insert into tbl values (1, repeat('A', 1000));
+insert into tbl values (2, repeat('B', 10000));
+insert into tbl values (3, repeat('C', 100000)); -- Worse! heap_ovf_insert()
+...
+
+select id from tbl;
+```
+
+- 큐브리드 현재 동작 방식
+  - ???
+
+- 결과
+  - ???
+  - 큰 VARCHAR / LOB / Vector 컬럼이 많을수록 ???
+
+---
+	
+## ⚠️ 현재 문제점
+
+```sql
+create table tbl (id int, txt varchar); -- 매우 큰 varchar
+
+-- insert 1000000 rows...
+insert into tbl values (1, repeat('A', 1000));
+insert into tbl values (2, repeat('B', 10000));
+insert into tbl values (3, repeat('C', 100000)); -- Worse! heap_ovf_insert()
+...
+
+select id from tbl;
+```
+
+- 큐브리드 현재 동작 방식
+  - `id` 컬럼만 조회해도 **txt까지 모두 디스크에서 fetch**
+
+- 결과
+  - 불필요한 I/O 발생 → **성능 저하**
+  - 큰 VARCHAR / LOB / Vector 컬럼이 많을수록 **악영향**
+
+---
+
+### ✅  요구사항
+
+* **IO 최적화**
+
+  - 일부 컬럼만 조회 시 대용량 컬럼 불필요하게 읽지 않도록 I/O 최적화
+  - Full Table Scan 성능 개선 (대용량 컬럼 제외 시 빠르게)
+
+* **기능적 안정성**
+  - Recovery / Replication / HA 환경에서 Out-of-Line 컬럼도 정상 동작해야 함
+  - DBMS 내부에서 Out-of-Line 컬럼 데이터 관리 (외부 파일 아님)
 
 ---
 
@@ -58,44 +115,6 @@ highlightTheme: monokai
 - Overflow pages (InnoDB)
 
 * 본 발표에서는 **Out of Line 저장 기법**이라는 용어로 통일
-
----
-	
-## ⚠️ 현재 문제점
-
-```sql
-create table tbl (id int, txt varchar); -- 매우 큰 varchar
-
--- insert 1000000 rows...
-
-select id from tbl;
-```
-
-- 큐브리드 현재 동작 방식
-    - ???
-
-- 결과
-    - ???
-    - 큰 VARCHAR / LOB / Vector 컬럼이 많을수록 ???
-
----
-	
-## ⚠️ 현재 문제점
-
-```sql
-create table tbl (id int, txt varchar); -- 매우 큰 varchar
-
--- insert 1000000 rows...
-
-select id from tbl;
-```
-
-- 큐브리드 현재 동작 방식
-    - `id` 컬럼만 조회해도 **txt까지 모두 디스크에서 fetch**
-
-- 결과
-    - 불필요한 I/O 발생 → **성능 저하**
-    - 큰 VARCHAR / LOB / Vector 컬럼이 많을수록 **악영향**
 
 ---
 
