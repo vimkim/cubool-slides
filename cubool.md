@@ -3,56 +3,59 @@ width: 1400
 height: 900
 theme: my-talk
 highlightTheme: monokai
+
 ---
+
+# 큐브리드 대용량 레코드 저장 구조 개선
+
+>큐브리드 **Out-of-Line Overflow Column Storage** 도입 계획
+
+개발2팀 김대현
 
 ![height:50px right](cubrid-logo-big-transparent.png)
-## 큐브리드 대용량 컬럼 저장 구조 개선
-
->큐브리드 **Out-of-Line Column Storage (TOAST)** 도입 논의
-
-개발2팀
 
 ---
 
-## 🎯 미팅 목적
+## 🎯 목차
 
-- 현재 CUBRID 저장 구조의 **대용량 컬럼 처리 한계** 공유  
-- 주요 DBMS(PostgreSQL, MySQL, Oracle) 사례 비교 및 제약사항 이해  
-- 성능 실험 결과 기반으로 TOAST/Off-Page 장단점 검토  
-- CUBRID에 필요한 **개선 방향성 및 요구사항 수집**  
+- 현재 CUBRID 저장 구조의 **대용량 레코드 처리 한계** 공유
+- 주요 DBMS(PostgreSQL, MySQL, Oracle) 사례 비교 및 제약사항 이해
+- 성능 실험 결과 기반으로 장단점 검토
+- CUBRID에 필요한 **개선 방향성 및 요구사항 수집**
 
 ---
 
 ## 📌 발표 순서
 
 * 용어 정의
-* 큐브리드 대용량 컬럼 저장의 문제점
+* 큐브리드 대용량 레코드 저장의 문제점
 * 타 DBMS 사례 조사 결과 공유
-    - **PostgreSQL TOAST**
-    - **MySQL InnoDB off-page**
-    - **Oracle** (LOB, Row Chaining)
-* PostgreSQL toast 성능 실험 결과 공유
-- 최종: 요구사항 수집
+  - **PostgreSQL TOAST** (The Oversized-Attribute Storage Technique)
+  - **MySQL InnoDB off-page**
+  - **Oracle Row Chaining**
+* **큐브리드의 개선 방향성 제안**
 
 ---
 
 ## 용어 정의 및 설명
 
-**TOAST**
+### Oversized Attribute Storage 이란?
 
-* **The Over-sized Attribute Storage Technique**
-- 레코드(튜플)을 연속적으로 저장하지 않고, 큰 속성 (Attribute)를 튜플로부터 떨어진 다른 **보조 저장소에 저장**하고, 기존 레코드에는 데이터에 대한 **포인터**를 남겨 **튜플 크기를 줄이는** 기법
+* **The Over-sized Attribute Storage Technique** (TOAST)
+- 레코드(튜플)을 연속적으로 저장하지 않고, 큰 속성 (Attribute)를 튜플로부터 떨어진 다른 **보조 저장소에 저장**하고, 기존
+  레코드에는 데이터에 대한 **포인터**를 남겨 **튜플 크기를 줄이는** 기법
 - 해당 **보조 저장소**는 여전히 DBMS에 의해 관리됨.
-* 주의: **외부 저장소**라고 표현할 경우, BFILE, BLOB External 등과 같이 OS File Storage 와 혼동할 수 있음.
+* 주의:
+  **외부 저장소**라고 표현할 경우, BFILE, BLOB External 등과 같이 OS File Storage 와 혼동할 수 있음.
 
 ---
 
-## 비슷한 용어들
+## 비슷한 용어들 (공식 문서 기준)
 
 - Out of Line 저장 (PostgreSQL, Oracle)
 - Toast 저장 (PostgreSQL)
 - Off-page 저장 (InnoDB)
-
+- Overflow pages (InnoDB)
 
 * 본 발표에서는 **Out of Line 저장 기법**이라는 용어로 통일
 
@@ -121,7 +124,8 @@ select id from tbl;
 - 레코드 크기가 대략 2KB를 넘을 시, 컬럼들을 큰 순서대로 **TOAST 테이블**로 분리
 - 분할하여 하나의 TOAST 테이블에 저장
     - 모든 테이블은 **단 하나**의 숨겨진 TOAST 테이블을 소유하고 있음.
-- 분할 데이터는 (chunk_id, chunk_seq) 부여. 유니크 인덱스가 걸려 있음.
+- 분할 데이터는 (chunk_id, chunk_seq) 부여.
+  유니크 인덱스가 걸려 있음.
 
 ---
 
@@ -161,7 +165,7 @@ iNSERT INTO tbl VALUES (repeat('A', 4000), repeat('B', 4000));
 
 - 특정 컬럼만을 항상 Toast로 보내기 불가능 ❌
 * 특정 컬럼만을 항상 Toast 금지 가능 ✅ 
-	- 단, 8kB 에러 주의  ⛔️
+	- 단, 8kB 에러 주의 ⛔️
 - 임의로 TOAST 촉발(trigger)시키는 것은 불가능하다 (Threshold 2kB) ❌
 * TOAST 촉발되었을 경우, 나누는 크기 조절 가능 ✅
 * TOAST 이후 남은 튜플 크기 조절 가능 ✅
@@ -171,7 +175,8 @@ iNSERT INTO tbl VALUES (repeat('A', 4000), repeat('B', 4000));
 
 ## MySQL (InnoDB)
 
-- 레코드 크기가 Page Size (기본 16K) 절반을 넘을 경우, 컬럼들을 순서대로 **Off-Page** 저장소 (Singly Linked Overflow Pages)로 분리 저장
+- 레코드 크기가 Page Size (기본 16K) 절반을 넘을 경우, 컬럼들을 순서대로 **Off-Page** 저장소 (Singly
+  Linked Overflow Pages)로 분리 저장
 - 모든 컬럼은 각자 하나씩 **Off-Page** 저장소를 가지고 있음.
 
 ---
@@ -191,7 +196,8 @@ iNSERT INTO tbl VALUES (repeat('A', 4000), repeat('B', 4000));
 - Dynamic Row Format (Default), Compressed
 	- **큰 속성부터 차례로** Off-Page Storage로 이주
 	- 20바이트 포인터만 레코드에 남음
-	- **각 행은** 각각 Off-Page Storage를 가지고 있으며, **Singly Linked Overflow Pages**로 구현되어 있음
+	- **각 행은** 각각 Off-Page Storage를 가지고 있으며, **Singly Linked Overflow Pages**로 구현되어
+   있음
 	- **50바이트 이하는** Off-Page로 가지 않음 ✅
 * Redundant, Compact ⚠️
 	- 768바이트는 Record에 남겨두고, 나머지 (size - 768) byte는 Off-Page Storage로 보냄
@@ -202,7 +208,7 @@ iNSERT INTO tbl VALUES (repeat('A', 4000), repeat('B', 4000));
 
 - 컬럼 기반 제어 불가능
 	- 특정 컬럼만을 Off Page 하지 않기 불가능 ❌
-	- 특정 컬럼만을 Off Page 하기 불가능  ❌
+	- 특정 컬럼만을 Off Page 하기 불가능 ❌
 - Off-Page 임계치(threshold)는 page_size/2  
 	- Page Size를 바꿔야만 기준 변경 가능 ⚠️  
 	- REDUNDANT, COMPACT 에서는 항상 768B In-row 고정 ⚠️
@@ -213,19 +219,22 @@ iNSERT INTO tbl VALUES (repeat('A', 4000), repeat('B', 4000));
 
 ## Oracle
 
-- BLOB, CLOB, BFILE, CFILE  타입만 지원
+- BLOB, CLOB, BFILE, CFILE 타입만 지원
 	* 개발자가 타입을 명시해야 함 ⚠️
 	* 행의 나머지 타입들은 항상 연속적으로 저장
 - 한 행 크기가 블록 (페이지) 크기를 넘어갈 경우 (!)
-	* Row Chaining: 여러 블록에 나누어 저장 후 체인 포인터로 연결
+	* Row Chaining:
+   여러 블록에 나누어 저장 후 체인 포인터로 연결
 - 큰 데이터에 대해서는 사용자가 직접 LOB(SECUREFILE) 컬럼 지정 및 사용 권장 ⚠️
 
 ---
 
 ## 행 크기를 줄이고 싶다면...
 
-- postgresql, mysql: 자동으로 Out of Line 💯
-- Oracle : 개발자가 직접 LOB 타입을 사용해야 함 ⚠️
+- postgresql, mysql:
+  자동으로 Out of Line 💯
+- Oracle :
+  개발자가 직접 LOB 타입을 사용해야 함 ⚠️
 
 ---
 
@@ -278,27 +287,32 @@ INSERT INTO s.t_ext    (payload) SELECT s.gen_rand_text(3000)   FROM generate_se
 
 ## 📈 성능 결과: Full Table Scan
 
-- Query: `select id from tbl;`
+- Query:
+  `select id from tbl;`
 
 |Case|실행 (ms)|Read (pages)|≈ Disk (MiB)|I/O시간 (ms)|Notes|
 |---|--:|--:|--:|--:|---|
 |`t_plain`|**1,549.3**|**100,000**|**~781**|**1,447.1**|Big heap; payload inline.|
 |`t_ext`|**29.5**|**1,471**|**~11.5**|**9.7**|Tiny heap; payload out-of-line.|
 
-**TOAST**가 압도적으로 빠름. 👍
+**TOAST**가 압도적으로 빠름.
+👍
 
 ---
 
 ## 📈 성능 결과: PK random access
 
-Query: `select id, payload from (... random temp table 1만) join tbl using (id);` 
+Query:
+`select id, payload from (...
+random temp table 1만) join tbl using (id);` 
 
 |테이블|실행 (ms)|Read (pages)|≈ Disk(MiB)|Hit (pages)|I/O시간 (ms)|계획(요약)|
 |---|--:|--:|--:|--:|--:|---|
 |`s.t_plain`|**1,767.6**|**10,057**|**≈ 78.6**|28,918|1,660.8|Nested Loop + Index Scan|
 |`s.t_ext`|**1,977.4**|**12,666**|**≈ 99.0**|66,424|1,824.3|Nested Loop + Index Scan (+ TOAST)|
 
-인라인(PLAIN)이 TOAST보다 **~11.9%** 빠름. 🤔
+인라인(PLAIN)이 TOAST보다 **~11.9%** 빠름.
+🤔
 
 ---
 
@@ -315,8 +329,8 @@ Query: `select id, payload from (... random temp table 1만) join tbl using (id)
 ### 📈 성능으로 보는 Toast 장단점
 
 - 두 경우 모두 **I/O가 지배적**:
-	- I/O read 시간이 각각 **~1.66s**(plain) vs **~1.82s**(ext).  
-    즉, 랜덤 패턴 + 콜드 캐시에서는 TOAST 경로가 **디스크에서 더 많은 바이트**를 가져오게 되어 느려짐.
+	- I/O read 시간이 각각 **~1.66s**(plain) vs **~1.82s**(ext).
+   즉, 랜덤 패턴 + 콜드 캐시에서는 TOAST 경로가 **디스크에서 더 많은 바이트**를 가져오게 되어 느려짐.
 
 ---
 
@@ -325,8 +339,12 @@ Query: `select id, payload from (... random temp table 1만) join tbl using (id)
 |구분|TOAST 적용 (Out-of-Line)|TOAST 미적용 (Inline)|
 |----|------------------------|----------------------|
 |**Full Table Scan**|힙 크기 작음 → 작은 컬럼만 읽을 때 **매우 빠름** (I/O 절감)|불필요한 대용량 컬럼까지 읽음 → **느림**|
-|**Random Access (PK 등)**|추가 TOAST 페이지 읽기 필요 → **3kB 기준 약간 느림** (~10~20%)|모든 데이터가 한 페이지에 → **조금 더 빠름**|
-|**스토리지 효율**|대용량 속성은 압축 + 분리 저장 → **공간 절약**|압축 없음, 큰 컬럼이 항상 힙에 포함됨|
+|**Random Access (PK 등)**|추가 TOAST 페이지 읽기 필요 → **3kB 기준 약간
+                                                                     느림** (~10~20%)|모든 데이터가 한 페이지에 → **조금
+                                                                                                                                                     더
+                                                                                                                                                     빠름**|
+|**스토리지 효율**|대용량 속성은 압축 + 분리 저장 → **공간
+                                                                        절약**|압축 없음, 큰 컬럼이 항상 힙에 포함됨|
 |**유연성**|행/컬럼 단위로 일부만 TOAST 가능|모든 컬럼이 항상 인라인|
 |**복잡성**|추가 페이지 관리 필요 (성능 변동 요인)|단순 (추가 관리 없음)|
 
@@ -334,11 +352,13 @@ Query: `select id, payload from (... random temp table 1만) join tbl using (id)
 
 ## ✅ 정리
 
-- **메타데이터만**(예: `SELECT id`) 읽을 때는 TOAST가 매우 유리(힙이 작음).
+- **메타데이터만**(예:
+  `SELECT id`) 읽을 때는 TOAST가 매우 유리(힙이 작음).
     
 - **랜덤으로 실제 페이로드를 읽을 때**는 인라인(`PLAIN/MAIN`)이 유리하거나 비슷—여기서는 인라인이 약 **12%** 빠름.
     
-- (toast 한정) 샘플을 더 늘리거나(예: 100k) 데이터가 더 커질수록(행당 더 많은 TOAST 청크) **TOAST 패널티**가 커질 수 있음.
+- (toast 한정) 샘플을 더 늘리거나(예:
+  100k) 데이터가 더 커질수록(행당 더 많은 TOAST 청크) **TOAST 패널티**가 커질 수 있음.
 	- why?
 - (toast 한정) TOAST 되는 column 숫자가 증가하면 **TOAST 패널티가 커질 수 있음**.
 	- why?
@@ -346,11 +366,13 @@ Query: `select id, payload from (... random temp table 1만) join tbl using (id)
 
 ## ✅ 정리
 
-- **메타데이터만**(예: `SELECT id`) 읽을 때는 TOAST가 매우 유리(힙이 작음).
+- **메타데이터만**(예:
+  `SELECT id`) 읽을 때는 TOAST가 매우 유리(힙이 작음).
     
 - **랜덤으로 실제 페이로드를 읽을 때**는 인라인(`PLAIN/MAIN`)이 유리하거나 비슷—여기서는 인라인이 약 **12%** 빠름.
     
-- (toast 한정) 샘플을 더 늘리거나(예: 100k) 데이터가 더 커질수록(행당 더 많은 TOAST 청크) **TOAST 패널티**가 커질 수 있음.
+- (toast 한정) 샘플을 더 늘리거나(예:
+  100k) 데이터가 더 커질수록(행당 더 많은 TOAST 청크) **TOAST 패널티**가 커질 수 있음.
 	- 청크들을 찾아서 재조립 필요
 - (toast 한정) TOAST 되는 column 숫자가 증가하면 **TOAST 패널티가 커질 수 있음**.
 	* 같은 TOAST 테이블에 나뉘어 저장되기 때문
@@ -359,8 +381,10 @@ Query: `select id, payload from (... random temp table 1만) join tbl using (id)
 
 ## ✅ 결론
 
-- 현재 문제: 모든 컬럼을 디스크에서 읽는 비효율
-- 해결책: 큐브리드도 다른 DBMS처럼 Out-of-Line 저장
+- 현재 문제:
+  모든 컬럼을 디스크에서 읽는 비효율
+- 해결책:
+  큐브리드도 다른 DBMS처럼 Out-of-Line 저장
     * Out-of-Line 저장소의 형태는 추가 논의 필요
         * pg toast처럼 테이블 기반?
         * InnoDB처럼 Linked Overflow Pages 기반?
@@ -394,7 +418,8 @@ Query: `select id, payload from (... random temp table 1만) join tbl using (id)
 ### ⚖️ 기타 요구사항
 
 * **압축 및 저장 효율**
-  * 컬럼 단위 압축 알고리즘 선택 가능 (예: zlib, LZ4 등)
+  * 컬럼 단위 압축 알고리즘 선택 가능 (예:
+    zlib, LZ4 등)
   * Out-of-Line 데이터 통계(사용량, 압축률 등) 수집 및 모니터링
 * **호환성**
   * 기존 애플리케이션 코드 변경 없이도 Out-of-Line 기능 자동 활용
@@ -427,13 +452,17 @@ Query: `select id, payload from (... random temp table 1만) join tbl using (id)
 
 ## ✨ 구현 계획 제안
 
-- **1단계: 대용량 컬럼 타입 우선 적용**
+- **1단계:
+  대용량 컬럼 타입 우선 적용**
    - `BLOB`, `CLOB`, `Vector` 와 같이 **명확히 대용량 데이터 저장**을 전제로 하는 타입에 우선 적용
    - 초기 적용 시 안정성·I/O 최적화 효과 검증
-* **2단계: 조건부 범위 확장 (Threshold 기반)**
+* **2단계:
+  조건부 범위 확장 (Threshold 기반)**
    - `VARCHAR`, `VARBINARY` 등 **가변 길이 타입 중 대용량 활용 가능성이 있는 컬럼**으로 확대
-   - DBA/개발자가 **threshold 크기(예: 4KB, 8KB)** 설정하여 인라인 ↔ 아웃라인 저장 방식 제어 가능
-* **3단계: 모든 가변 길이 타입 일반화**
+   - DBA/개발자가 **threshold 크기(예:
+     4KB, 8KB)** 설정하여 인라인 ↔ 아웃라인 저장 방식 제어 가능
+* **3단계:
+  모든 가변 길이 타입 일반화**
    - 모든 가변 길이 타입에서 기본 지원
 
 ---
