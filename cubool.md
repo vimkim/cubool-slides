@@ -277,8 +277,9 @@ iNSERT INTO tbl VALUES (repeat('A', 4000), repeat('B', 4000));
 - 16 KB Overflow Page에 1KB 크기의 Off-Page Column 1개만 저장한다면...?
 * Overflow Page 내부 남은 공간은?
   * InnoDB 내부적 Page 압축 기법인 Transparent Page Compression 적용
-  * `fallocate(...FALLOC_FL_PUNCH_HOLE)` 시스템 콜을 통해 물리 디스크 공간 해제 -> **물리적 공간 낭비
-    최소화**
+  * `fallocate(...FALLOC_FL_PUNCH_HOLE)` 시스템 콜을 통해 논리 저장 구조는 유지하되, 물리 디스크 공간 해제
+    -> 실질적으로 **물리적 공간 낭비 최소화**
+    -> 단, 운영체제 및 파일시스템 지원 필요
 
 ---
 
