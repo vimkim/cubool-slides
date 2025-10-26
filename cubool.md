@@ -274,12 +274,12 @@ iNSERT INTO tbl VALUES (repeat('A', 4000), repeat('B', 4000));
 ## MySQL 특이사항
 
 - 컬럼끼리 Overflow Page 를 공유하지 않음 -> 1개의 Overflow Page에는 1개의 컬럼 데이터만 존재
-- 16 KB Overflow Page에 1KB 크기의 Off-Page Column 1개만 저장한다면...?
+* 16 KB Overflow Page에 4KB 크기의 Off-Page Column 1개만 저장한다면...?
+  **12KB 낭비!**
 * Overflow Page 내부 남은 공간은?
-  * InnoDB 내부적 Page 압축 기법인 Transparent Page Compression 적용
+  * InnoDB 내부적 Page 압축 기법인 **Transparent Page Compression** 적용
   * `fallocate(...FALLOC_FL_PUNCH_HOLE)` 시스템 콜을 통해 논리 저장 구조는 유지하되, 물리 디스크 공간 해제
-    -> 실질적으로 **물리적 공간 낭비 최소화**
-    -> 단, 운영체제 및 파일시스템 지원 필요
+    -> 실질적으로 **물리적 공간 낭비 최소화** -> 단, 운영체제 및 파일시스템 지원 필요
 
 ---
 
@@ -313,8 +313,10 @@ CUBRID Out-of-Line Overflow Column Storage (OOS) 도입
 |---|---|
 |**Heap Page**|기본 레코드 저장 공간. Out-of-Line 컬럼은 실제 데이터 대신 **OOS포인터** 만 저장 |
 |**OOS Page**|실제 대용량 컬럼 데이터를 저장하는 별도의 저장 공간 |
-|**Overflow Page**| Deprecated. |
+|**Overflow Page**| **Deprecated due to OOS**...? |
 
+
+* Overflow Page는 OOS 도입 후 불필요해질 가능성
 
 ---
 
