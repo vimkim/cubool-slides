@@ -276,7 +276,7 @@ iNSERT INTO tbl VALUES (repeat('A', 4000), repeat('B', 4000));
 - 컬럼끼리 Overflow Page 를 공유하지 않음 -> 1개의 Overflow Page에는 1개의 컬럼 데이터만 존재
 - 16 KB Overflow Page에 1KB 크기의 Off-Page Column 1개만 저장한다면...?
 * Overflow Page 내부 남은 공간은?
-  * InnoDB 내부적 Page 압축 기법인 Transient Page Compression 적용
+  * InnoDB 내부적 Page 압축 기법인 Transparent Page Compression 적용
   * `fallocate(...FALLOC_FL_PUNCH_HOLE)` 시스템 콜을 통해 물리 디스크 공간 해제 -> **물리적 공간 낭비
     최소화**
 
