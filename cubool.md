@@ -281,6 +281,8 @@ iNSERT INTO tbl VALUES (repeat('A', 4000), repeat('B', 4000));
   * InnoDB 내부적 Page 압축 기법인 **Transparent Page Compression** 적용
   * `fallocate(...FALLOC_FL_PUNCH_HOLE)` 시스템 콜을 통해 논리 저장 구조는 유지하되, 물리 디스크 공간 해제
     -> 실질적으로 **물리적 공간 낭비 최소화** -> 단, 운영체제 및 파일시스템 지원 필요
+    * Windows 에서는 NTFS 파일 시스템을 따로 빌드해야 함 -> NTFS Compression Unit (default 64KB) 단위로만 해제 가능
+    * https://dev.mysql.com/doc/refman/8.4/en/innodb-page-compression.html
 
 ---
 
@@ -383,6 +385,14 @@ CUBRID Out-of-Line Overflow Column Storage (OOS) 도입
 | ------------------- | ----------------- | -- |
 | **In-place Update** | 동일 크기 시 직접 갱신 + 크기 변화 시 OOS id 교체 | 이전 버전 로그에 유지 |
 | **Append Only Update** |  Update는 항상 Insert 취급, OOS id 항상 교체 | 이전 버전을 OOS에 보관 |
+
+
+#### (Slotted Page 사용할 시) Fragmentation 해결
+
+| 방식                  | 설명                | 특징 |
+| ------------------- | ----------------- | -- |
+| **In-page fragmentation** | page 내부에서 fragmented free space 확보 | Slotted Page 사용 시 OOS id 유지 |
+| **Across-page fragmentation** |  여러 개의 page에 나뉜 데이터를 하나로 합치고 빈 페이지 반환 작업 | OOS id 변경됨 |
 
 ---
 
