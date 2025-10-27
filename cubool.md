@@ -279,10 +279,11 @@ iNSERT INTO tbl VALUES (repeat('A', 4000), repeat('B', 4000));
   **12KB 낭비!**
 * Overflow Page 내부 남은 공간은?
   * InnoDB 내부적 Page 압축 기법인 **Transparent Page Compression** 적용
-  * `fallocate(...FALLOC_FL_PUNCH_HOLE)` 시스템 콜을 통해 논리 저장 구조는 유지하되, 물리 디스크 공간 해제
-    -> 실질적으로 **물리적 공간 낭비 최소화** -> 단, 운영체제 및 파일시스템 지원 필요
-    * Windows 에서는 NTFS 파일 시스템을 따로 빌드해야 함 -> NTFS Compression Unit (default 64KB) 단위로만 해제 가능
-    * https://dev.mysql.com/doc/refman/8.4/en/innodb-page-compression.html
+  * `fallocate(...FALLOC_FL_PUNCH_HOLE)` 등 시스템 콜을 통해 논리 저장 구조는 유지하되, 물리 디스크 공간 해제
+    -> 실질적으로 OS 단에서 **물리적 공간 낭비 최소화 + Disk IO Fetch 최적화**
+    * 단, 운영체제 및 파일시스템 지원 필요
+      * Windows 에서는 NTFS 파일 시스템을 따로 빌드해야 함
+        - https://dev.mysql.com/doc/refman/8.4/en/innodb-page-compression.html
 
 ---
 
