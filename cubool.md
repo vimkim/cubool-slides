@@ -305,35 +305,83 @@ iNSERT INTO tbl VALUES (repeat('A', 4000), repeat('B', 4000));
 
 CUBRID Out-of-Line Overflow Column Storage (OOS) 도입
 
+목표 - 대용량 컬럼 분리 저장으로 I/O 효율 향상
+
 ---
 
 ## 1️⃣ 기본 구조
 
 |구성요소|설명|
 |---|---|
-|**Heap Page**|기본 레코드 저장 공간. Out-of-Line 컬럼은 실제 데이터 대신 **OOS포인터** 만 저장 |
-|**OOS Page**|실제 대용량 컬럼 데이터를 저장하는 별도의 저장 공간 |
+|**Heap Page**| 기본 레코드 저장, OOS 컬럼은 실제 데이터 대신 **OOS 포인터 (OOS id)** 만 저장 |
+|**OOS Page**| 실제 대용량 컬럼 데이터를 저장 |
 |**Overflow Page**| **Deprecated due to OOS**...? |
 
 
-* Overflow Page는 OOS 도입 후 불필요해질 가능성
+* Overflow Page는 OOS 도입 후 역할이 겹침
 
 ---
 
-## 2️⃣ 저장 동작 흐름
+## 2️⃣ OOS 조건
 
-1. INSERT/UPDATE 시 튜플 크기 판단 → 레코드 크기가 **Threshold (예:8KB)** 초과 시 OOS 대상 컬럼 선별
-   (크기 순)
-
-2. OOS 대상이 된 컬럼은 분리 저장 → Heap에는 **OOS 포인터** 만 남김
+- 레코드 크기 계산
+  * INSERT/UPDATE 시 튜플 크기 판단 → 레코드 크기가 **Threshold (예:8KB)** 초과 시 OOS 대상 선별
+  * 크기 기준 정렬 후 레코드 크기가 Threshold 이하가 될 때까지 OSS
 
 ---
 
-## 기대 효과
+![oos-page](images/oos-page.png)
 
-- Full Table Scan 시 불필요한 대용량 컬럼 I/O 제거
-- Heap Page 밀도 향상 → Cache 효율 상승
-- Update 시에도 대용량 컬럼이 변경되지 않으면 OOS Page 접근 불필요
+---
+
+### 🧮 4. 기대 효과
+
+|항목|효과|
+|---|---|
+|**Full Scan 효율**|대용량 컬럼 I/O 제거|
+|**Page 밀도 향상**|더 많은 레코드 캐시 가능|
+|**Update 효율**|비변경 컬럼에 대한 OOS 접근 불필요|
+
+
+### ⚠️ 5. 고려사항
+
+|항목|내용|
+|---|---|
+|**MVCC 지원**|Undo/Redo 시 OOS 메타데이터 동기화|
+|**Backup/HA**|Log-based OOS 변경 추적 필요|
+|**Recovery**|OOS Page Consistency 보장 필요|
+
+---
+
+## 설계 방향
+
+#### 아키텍처 옵션
+
+| 수준     | 구분         | 비고 |
+| ------ | ---------- | -- |
+| DB 단위  | 1개 OOS 영역  | drop table, drop column 연산 어려움 |
+| 테이블 단위 | 개별 OOS 영역  | PostgreSQL Toast |
+| 컬럼 단위  | 컬럼 별 OOS 저장 | Columnar Storage 형식 |
+| 값 단위 | 개별 값마다 독자적인 OOS page chain | MySQL InnoDB Off-page + Transparent Page Compression |
+
+#### 구현 방안 옵션
+
+| 방법                   | 설명             | 특징 |
+| -------------------- | -------------- | --- |
+| Overflow Page 모방     | 기존 구조 재활용      | 남은 공간 활용 어려움 |
+| Slotted Page 기반      | 단편화 최소화        | 접근 시 Page Lock 관리 필요 |
+| 테이블 API 활용           | 기존 스토리지 API 호환 | 중복 트랜잭션 처리 |
+| 외부 Object Storage 연계 | 확장성 고려         | Recovery, Backup 복잡도 증가 |
+
+
+---
+
+#### Update 시나리오 옵션
+
+| 방식                  | 설명                | 특징 |
+| ------------------- | ----------------- | -- |
+| **In-place Update** | 동일 크기 시 직접 갱신 + 크기 변화 시 OOS id 교체 | 이전 버전 로그에 유지 |
+| **Append Only Update** |  Update는 항상 Insert 취급, OOS id 항상 교체 | 이전 버전을 OOS에 보관 |
 
 ---
 
