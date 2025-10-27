@@ -243,6 +243,7 @@ iNSERT INTO tbl VALUES (repeat('A', 4000), repeat('B', 4000));
 	- **50바이트 이하는** Off-Page로 가지 않음 ✅
 * Redundant, Compact ⚠️
 	- 768바이트는 Record에 남겨두고, 나머지 (size - 768) byte는 Off-Page Storage로 보냄
+  - 과거의 Default 방식
 
 ---
 
