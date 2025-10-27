@@ -10,7 +10,7 @@ highlightTheme: monokai
 
 >큐브리드 **Out-of-Line Overflow Column Storage** 도입 계획
 
-개발2팀 김대현
+개발 2팀 김대현
 
 ![height:50px right](cubrid-logo-big-transparent.png)
 
