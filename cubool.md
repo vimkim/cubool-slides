@@ -389,12 +389,12 @@ CUBRID Out-of-Line Overflow Column Storage (OOS) 도입
 | **Append Only Update** |  Update는 항상 Insert 취급, OOS id 항상 교체 | 이전 버전을 OOS에 보관 |
 
 
-#### (Slotted Page 사용할 시) Fragmentation 해결
-
-| 방식                  | 설명                | 특징 |
-| ------------------- | ----------------- | -- |
-| **In-page fragmentation** | page 내부에서 fragmented free space 확보 | Slotted Page 사용 시 OOS id 유지 |
-| **Across-page fragmentation** |  여러 개의 page에 나뉜 데이터를 하나로 합치고 빈 페이지 반환 작업 | OOS id 변경됨 |
+<!-- #### (Slotted Page 사용할 시) Fragmentation 해결 방식 -->
+<!---->
+<!-- | 방식                  | 설명                | 특징 | -->
+<!-- | ------------------- | ----------------- | -- | -->
+<!-- | **In-page compaction** | page 내부에서 fragmented free space 확보 | Slotted Page 사용 시 OOS id 유지 | -->
+<!-- | **Across-page compaction** |  여러 개의 page에 나뉜 데이터를 하나로 합치고 빈 페이지 반환 작업 | OOS id 변경됨 | -->
 
 ---
 
