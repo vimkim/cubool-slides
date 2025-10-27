@@ -371,7 +371,7 @@ CUBRID Out-of-Line Overflow Column Storage (OOS) 도입
 | -------------------- | -------------- | --- |
 | Overflow Page 모방     | 기존 구조 재활용      | 남은 공간 활용 어려움 |
 | Slotted Page 기반      | 단편화 최소화        | 접근 시 Page Lock 관리 필요 |
-| 테이블 API 활용           | 기존 스토리지 API 호환 | 중복 트랜잭션 처리 |
+| 테이블 API 활용           | 기존 스토리지 API 호환 | 중복 트랜잭션 처리, 큰 레코드 (large OOS column payload) 에 대해 같은 문제 발생 |
 | 외부 Object Storage 연계 | 확장성 고려         | Recovery, Backup 복잡도 증가 |
 
 
