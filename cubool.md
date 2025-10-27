@@ -10,7 +10,7 @@ highlightTheme: monokai
 
 >큐브리드 **Out-of-Line Overflow Column Storage** 도입 계획
 
-개발2팀
+개발2팀 김대현
 
 ![height:50px right](cubrid-logo-big-transparent.png)
 
@@ -126,9 +126,9 @@ select id from tbl;
 ### Oversized Attribute Storage 이란?
 
 * **The Over-sized Attribute Storage Technique** (TOAST)
-- 레코드(튜플)을 연속적으로 저장하지 않고, 큰 속성 (Attribute)를 튜플로부터 떨어진 다른 **보조 저장소에 저장**하고, 기존
+* 레코드(튜플)을 연속적으로 저장하지 않고, 큰 속성 (Attribute)를 튜플로부터 떨어진 다른 **보조 저장소에 저장**하고, 기존
   레코드에는 데이터에 대한 **포인터**를 남겨 **튜플 크기를 줄이는** 기법
-- 해당 **보조 저장소**는 여전히 DBMS에 의해 관리됨.
+* 해당 **보조 저장소**는 여전히 DBMS에 의해 관리됨.
 * 주의:
   **외부 저장소**라고 표현할 경우, BFILE, BLOB External 등과 같이 OS File Storage 와 혼동할 수 있음.
 
