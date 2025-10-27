@@ -152,6 +152,7 @@ select id from tbl;
 |-----------------|-------------------------------------------|---------------------------------------------------------|
 | **PostgreSQL**  | TOAST (The Oversized-Attribute Storage Technique) | 큰 컬럼 값을 별도 테이블에 저장, 필요 시 잘라서 접근            |
 | **MySQL (InnoDB)** | Off-Page Storage (Singly-Linked Overflow Pages) | 큰 데이터를 페이지 밖에 저장, 오버플로우 페이지 체인으로 연결     |
+| **Oracle** | Internal LOB Storage | LOB 데이터 타입만 적용  |
 
 ---
 
