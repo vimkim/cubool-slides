@@ -8,7 +8,7 @@ highlightTheme: monokai
 
 # 큐브리드 대용량 컬럼 저장 및 조회 구조 개선
 
->큐브리드 **Out-of-Line Overflow Column Storage** 도입 계획
+>큐브리드 **Out-of-Line Overflow Column Storage (OOS)** 도입 계획
 
 개발 2팀 김대현
 
